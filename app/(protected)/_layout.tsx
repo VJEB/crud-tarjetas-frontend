@@ -1,5 +1,7 @@
 import { Redirect, Stack } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
+import { NoteEditProvider } from '@/contexts/NoteEditContext';
+import { NotesProvider } from '@/contexts/NotesContext';
 import { ActivityIndicator, View } from 'react-native';
 
 export default function ProtectedLayout() {
@@ -21,8 +23,12 @@ export default function ProtectedLayout() {
 
   // If user is authenticated, render the protected routes
   return (
-    <Stack>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-    </Stack>
+    <NoteEditProvider>
+      <NotesProvider>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" />
+        </Stack>
+      </NotesProvider>
+    </NoteEditProvider>
   );
 }

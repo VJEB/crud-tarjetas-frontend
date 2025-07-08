@@ -3,21 +3,39 @@ import { ThemedView } from '@/components/ThemedView';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link, Stack, router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+
+interface AlertState {
+  visible: boolean;
+  title: string;
+  message: string;
+  buttons: Array<{ text: string; onPress?: () => void; style?: string }>;
+}
 
 export default function SignInScreen() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [alert, setAlert] = useState<AlertState>({
+    visible: false,
+    title: '',
+    message: '',
+    buttons: [{ text: 'OK' }]
+  });
   const { signIn } = useAuth();
+
+  const showAlert = (title: string, message: string, buttons: Array<{ text: string; onPress?: () => void; style?: string }> = [{ text: 'OK' }]) => {
+    if (Platform.OS === 'web') {
+      setAlert({ visible: true, title, message, buttons });
+    } else {
+      // @ts-ignore - Alert is only used on native
+      Alert.alert(title, message, buttons);
+    }
+  };
 
   const handleSignIn = async () => {
     if (!username || !password) {
-      if (Platform.OS === 'web') {
-        alert('Error: Please fill in all fields');
-      } else {
-        Alert.alert('Error', 'Please fill in all fields');
-      }
+      showAlert('Error', 'Please fill in all fields');
       return;
     }
 
@@ -26,12 +44,11 @@ export default function SignInScreen() {
       await signIn(username, password);
       // Navigate to the main app after successful sign in
       router.replace('/(tabs)');
-    } catch (error) {
-      if (Platform.OS === 'web') {
-        alert('Error: Failed to sign in');
-      } else {
-        Alert.alert('Error', error instanceof Error ? error.message : 'Failed to sign in');
-      }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message?.[0] || 
+                         error.message || 
+                         'Failed to sign in';
+      showAlert('Error', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -84,6 +101,38 @@ export default function SignInScreen() {
           </Link>
         </View>
       </View>
+
+      {/* Custom Alert Modal for Web */}
+      {alert.visible && Platform.OS === 'web' && (
+        <View style={styles.alertOverlay}>
+          <View style={styles.alertBox}>
+            <ThemedText type="title" style={styles.alertTitle}>{alert.title}</ThemedText>
+            <ThemedText style={styles.alertMessage}>{alert.message}</ThemedText>
+            <View style={styles.alertButtons}>
+              {alert.buttons.map((button, index) => (
+                <Pressable
+                  key={index}
+                  style={[
+                    styles.alertButton,
+                    button.style === 'destructive' && styles.destructiveButton
+                  ]}
+                  onPress={() => {
+                    button.onPress?.();
+                    setAlert(prev => ({ ...prev, visible: false }));
+                  }}
+                >
+                  <ThemedText style={[
+                    styles.alertButtonText,
+                    button.style === 'destructive' && styles.destructiveButtonText
+                  ]}>
+                    {button.text}
+                  </ThemedText>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        </View>
+      )}
     </ThemedView>
   );
 }
@@ -137,5 +186,57 @@ const styles = StyleSheet.create({
   link: {
     color: '#007AFF',
     fontWeight: '600',
+  },
+  alertOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  alertBox: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 20,
+    width: '90%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  alertTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  alertMessage: {
+    marginBottom: 20,
+  },
+  alertButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+  },
+  alertButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 4,
+    backgroundColor: '#f0f0f0',
+  },
+  alertButtonText: {
+    color: '#007AFF',
+    fontWeight: '500',
+  },
+  destructiveButton: {
+    backgroundColor: '#ffebee',
+  },
+  destructiveButtonText: {
+    color: '#d32f2f',
   },
 });

@@ -31,8 +31,14 @@ const storage = {
   }
 };
 
+interface User {
+  id?: number;
+  username: string;
+  token: string;
+}
+
 interface AuthContextData {
-  user: { username: string } | null;
+  user: User | null;
   isLoading: boolean;
   signIn: (username: string, password: string) => Promise<void>;
   signUp: (username: string, password: string) => Promise<void>;
@@ -42,20 +48,30 @@ interface AuthContextData {
 const AuthContext = createContext<AuthContextData | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<{ username: string } | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Check if user is logged in on app start
     const loadUser = async () => {
       try {
-        const token = await storage.getItem('authToken');
-        if (token) {
-          const userData = await authService.getCurrentUser(token);
-          setUser(userData);
+        const userJson = await storage.getItem('user');
+        if (userJson) {
+          const userData = JSON.parse(userJson);
+          // Ensure we have the token in the user object
+          if (userData.token) {
+            setUser(userData);
+          } else {
+            // If token is missing, sign out to clear any invalid state
+            await storage.deleteItem('user');
+            setUser(null);
+          }
         }
       } catch (error) {
         console.error('Failed to load user', error);
+        // On error, clear any potentially corrupted user data
+        await storage.deleteItem('user');
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
@@ -66,9 +82,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (username: string, password: string) => {
     try {
-      const data = await authService.signIn(username, password);
-      await storage.setItem('authToken', data.access_token);
-      setUser(data.user);
+      const { access_token: token, user: userData } = await authService.signIn(username, password);
+      const userWithToken = { 
+        ...userData, 
+        token 
+      };
+      await storage.setItem('user', JSON.stringify(userWithToken));
+      setUser(userWithToken);
     } catch (error) {
       console.error('Sign in error:', error);
       throw error;
@@ -77,9 +97,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (username: string, password: string) => {
     try {
-      const data = await authService.signUp(username, password);
-      await storage.setItem('authToken', data.access_token);
-      setUser(data.user);
+      const { access_token: token, user: userData } = await authService.signUp(username, password);
+      const userWithToken = { 
+        ...userData, 
+        token 
+      };
+      await storage.setItem('user', JSON.stringify(userWithToken));
+      setUser(userWithToken);
     } catch (error) {
       console.error('Sign up error:', error);
       throw error;
@@ -87,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    await storage.deleteItem('authToken');
+    await storage.deleteItem('user');
     setUser(null);
   };
 
