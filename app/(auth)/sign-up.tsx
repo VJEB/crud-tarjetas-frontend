@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { View, TextInput, StyleSheet, Pressable, ActivityIndicator, Platform } from 'react-native';
-import { Link, Stack, router } from 'expo-router';
-import { useAuth } from '@/contexts/AuthContext';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { useAuth } from '@/contexts/AuthContext';
+import { Link, Stack, router } from 'expo-router';
+import { useState } from 'react';
+import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 interface AlertState {
   visible: boolean;
