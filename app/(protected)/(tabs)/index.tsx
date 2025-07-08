@@ -3,6 +3,7 @@ import { ThemedView } from '@/components/ThemedView';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNoteEdit } from '@/contexts/NoteEditContext';
 import { useNotes } from '@/contexts/NotesContext';
+import { API_URL } from '@env';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -79,7 +80,7 @@ export default function HomeScreen() {
 
   const handleDeleteNote = async (noteId: number) => {
     try {
-      const response = await fetch(`http://localhost:3000/notes/${noteId}`, {
+      const response = await fetch(`${API_URL}/notes/${noteId}`, {
         method: 'DELETE',
         headers: {
           'accept': '*/*',
