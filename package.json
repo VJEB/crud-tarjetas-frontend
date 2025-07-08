@@ -3,9 +3,9 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
-    "start": "serve web",
-    "build": "expo export:web",
-    "postinstall": "expo export:web",
+    "start": "serve dist/web",
+    "build": "expo export --platform web",
+    "postinstall": "expo export --platform web",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo start --android",
     "ios": "expo start --ios",
